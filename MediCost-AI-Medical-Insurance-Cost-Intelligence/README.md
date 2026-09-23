@@ -1,7 +1,6 @@
 <div align="center">
 
-<!-- ===================== ANIMATED PREMIUM HEADER ===================== -->
-<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=0:071A2B,45:0E7490,75:14B8A6,100:7C3AED&height=235&section=header&text=MediCost%20AI&fontSize=58&fontColor=ffffff&fontAlignY=37&desc=Medical%20Insurance%20Cost%20Intelligence%20Platform&descAlignY=59&descSize=20&animation=fadeIn" />
+
 
 <!-- ===================== TYPING ANIMATION ===================== -->
 <a href="https://git.io/typing-svg">
