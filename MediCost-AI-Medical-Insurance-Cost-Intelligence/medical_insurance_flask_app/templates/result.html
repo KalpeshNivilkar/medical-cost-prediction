@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Prediction Result — MedCostAI</title>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Fraunces:wght@600;700;900&display=swap"
+    rel="stylesheet"
+  >
+</head>
+
+<body class="result-page">
+
+<!-- ── Nav ───────────────────────────────────────────────────────────────── -->
+<header class="top-bar">
+  <div class="top-bar-inner">
+    <div class="brand">
+      <span class="brand-icon">⚕</span>
+      <span class="brand-name">MedCost<strong>AI</strong></span>
+    </div>
+
+    <a href="/" class="btn-back">← New Prediction</a>
+  </div>
+</header>
+
+<!-- ── Result hero ───────────────────────────────────────────────────────── -->
+<section class="result-hero">
+  <div class="result-hero-glow {{ risk_class }}-glow"></div>
+
+  <div class="result-hero-content">
+    <p class="result-eyebrow">Prediction Complete</p>
+    <p class="result-cost-label">Estimated Annual Medical Cost</p>
+
+    <h1 class="result-cost">${{ predicted_cost }}</h1>
+
+    <div class="risk-badge {{ risk_class }}">
+      <span class="risk-badge-icon">{{ risk_icon }}</span>
+      <span class="risk-badge-text">{{ risk_label }}</span>
+    </div>
+
+    {% if gemini_enabled %}
+      <p class="gemini-status">🤖 Gemini AI insights enabled</p>
+    {% else %}
+      <p class="gemini-status">📊 Rule-based insights shown</p>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ── Cards grid ────────────────────────────────────────────────────────── -->
+<main class="result-shell">
+
+  <!-- Gemini / Rule Explanation Card -->
+  <div class="result-card result-card--full">
+    <div class="rcard-header">
+      <span class="rcard-icon">
+        {% if gemini_enabled %}🤖{% else %}💡{% endif %}
+      </span>
+
+      <h2 class="rcard-title">
+        {% if gemini_enabled %}
+          Gemini AI Cost Explanation
+        {% else %}
+          Cost Driver Analysis
+        {% endif %}
+      </h2>
+    </div>
+
+    <div class="ai-box">
+      <p class="explanation-text">{{ explanation }}</p>
+    </div>
+
+    <!-- Cost gauge bar -->
+    <div class="gauge-wrap">
+      <div class="gauge-labels">
+        <span>$0</span>
+        <span>$10,000</span>
+        <span>$25,000</span>
+        <span>$50,000+</span>
+      </div>
+
+      <div class="gauge-track">
+        <div class="gauge-zones">
+          <div class="gauge-zone gz-low"></div>
+          <div class="gauge-zone gz-medium"></div>
+          <div class="gauge-zone gz-high"></div>
+        </div>
+
+        {% set cost_num = predicted_cost | replace(',','') | float %}
+        {% set pct = [cost_num / 500, 100] | min %}
+
+        <div class="gauge-needle" style="left: {{ pct }}%">
+          <div class="gauge-needle-line"></div>
+          <div class="gauge-needle-dot"></div>
+        </div>
+      </div>
+
+      <div class="gauge-range-labels">
+        <span class="gl-low">Low Risk</span>
+        <span class="gl-medium">Medium Risk</span>
+        <span class="gl-high">High Risk</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Personalized Advice -->
+  <div class="result-card result-card--full">
+    <div class="rcard-header">
+      <span class="rcard-icon">💡</span>
+      <h2 class="rcard-title">Personalized AI Advice</h2>
+    </div>
+
+    <div class="advice-grid">
+      {% for item in ai_advice %}
+      <div class="advice-card">
+        <span class="advice-icon">✅</span>
+        <p>{{ item }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 30-Day Action Plan -->
+  <div class="result-card result-card--full">
+    <div class="rcard-header">
+      <span class="rcard-icon">📅</span>
+      <h2 class="rcard-title">30-Day Action Plan</h2>
+    </div>
+
+    <div class="plan-grid">
+      {% for step in ai_plan %}
+      <div class="plan-card">
+        <span class="plan-week">{{ step.week }}</span>
+        <h3>{{ step.focus }}</h3>
+        <p>{{ step.task }}</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- AI Cost Driver Visualization -->
+  <div class="result-card result-card--full">
+    <div class="rcard-header">
+      <span class="rcard-icon">📊</span>
+      <h2 class="rcard-title">AI Cost Driver Visualization</h2>
+    </div>
+
+    <p class="submit-note">
+      Gemini estimates the relative impact of major cost drivers on a 0–100 scale.
+    </p>
+
+    <div class="chart-wrap">
+      <canvas id="costDriverChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Download AI Report -->
+  <div class="result-card result-card--full download-report-card">
+    <div class="rcard-header">
+      <span class="rcard-icon">📥</span>
+      <h2 class="rcard-title">Download AI Report</h2>
+    </div>
+
+    <p class="submit-note">
+      Download a text report containing prediction, explanation, advice, and 30-day plan.
+    </p>
+
+    <form action="/download-report" method="POST">
+      <textarea name="report_text" style="display:none;">{{ download_report }}</textarea>
+
+      <button type="submit" class="download-btn">
+        <span>Download AI Report</span>
+        <span>↓</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Risk Breakdown Card -->
+  <div class="result-card">
+    <div class="rcard-header">
+      <span class="rcard-icon">📊</span>
+      <h2 class="rcard-title">Risk Category</h2>
+    </div>
+
+    <div class="risk-breakdown">
+      {% for label, cls, icon, lo, hi in [
+          ('Low Risk',    'risk-low',    '✅', '$0',       '< $10,000'),
+          ('Medium Risk', 'risk-medium', '⚠️', '$10,000',  '$10K – $25K'),
+          ('High Risk',   'risk-high',   '🔴', '$25,000+', '> $25,000')
+      ] %}
+      <div class="rb-row {% if risk_class == cls %}rb-row--active {{ cls }}{% endif %}">
+        <span class="rb-icon">{{ icon }}</span>
+        <span class="rb-label">{{ label }}</span>
+        <span class="rb-range">{{ hi }}</span>
+
+        {% if risk_class == cls %}
+        <span class="rb-current">← Current</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Key Indicators Card -->
+  <div class="result-card">
+    <div class="rcard-header">
+      <span class="rcard-icon">🎯</span>
+      <h2 class="rcard-title">Key Indicators</h2>
+    </div>
+
+    <div class="indicators-grid">
+      {% for label, value, key in [
+        ('Smoker',           input_summary[4][1],  'smoker'),
+        ('BMI',              input_summary[2][1],  'bmi'),
+        ('Chronic Diseases', input_summary[9][1],  'chronic'),
+        ('Hospitalisations', input_summary[11][1], 'hospital'),
+        ('Exercise Level',   input_summary[10][1], 'exercise'),
+        ('Insurance Plan',   input_summary[13][1], 'plan')
+      ] %}
+      <div class="indicator-chip">
+        <span class="ind-label">{{ label }}</span>
+        <span class="ind-value">{{ value }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Input Summary Table -->
+  <div class="result-card result-card--full">
+    <div class="rcard-header">
+      <span class="rcard-icon">📋</span>
+      <h2 class="rcard-title">Full Input Summary</h2>
+    </div>
+
+    <div class="summary-table-wrap">
+      <table class="summary-table">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for label, value in input_summary %}
+          <tr>
+            <td class="st-param">{{ label }}</td>
+            <td class="st-value">{{ value }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Important Note -->
+  <div class="result-card result-card--full">
+    <div class="rcard-header">
+      <span class="rcard-icon">⚠️</span>
+      <h2 class="rcard-title">Important Note</h2>
+    </div>
+
+    <p class="submit-note">
+      This prediction and AI-generated explanation are for educational and planning purposes only.
+      They are not medical advice, diagnosis, or a substitute for professional consultation.
+    </p>
+  </div>
+
+  <!-- Action Card -->
+  <div class="result-card result-card--full result-card--action">
+    <a href="/" class="btn-predict">
+      <span class="btn-icon">🔄</span>
+      <span class="btn-text">Predict Again</span>
+      <span class="btn-arrow">→</span>
+    </a>
+
+    <p class="submit-note">
+      Try different customer profiles to compare estimated costs.
+    </p>
+  </div>
+
+</main>
+
+<footer class="site-footer">
+  <p>
+    MedCostAI · Medical Insurance Cost Intelligence Platform · Built with Python, Flask, ML & Gemini AI
+  </p>
+</footer>
+
+<!-- Chart.js must load before script.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Pass Flask chart data to script.js -->
+<script>
+  window.costDriverData = {{ chart_data | safe }};
+</script>
+
+<!-- Main frontend script -->
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
